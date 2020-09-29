@@ -7,12 +7,18 @@
 * Dranziera Protocol
 
 ## Estrutura de diretórios
-paper-package
-|-dranziera
-  |-(domínios de treinamento separados por pastas)
-|-out_of_domain
-  |-(domínios de teste separados por pastas)
-|-CoreNLP.py
+
+O código prevê que a estrutura dos diretórios seja a seguinte:
+
+.
++--paper-package
+|  +--dranziera
+|  |  +--[pastas de domínios de treinamento]
+|  |  |  +--[arquivos do domínio].txt
+|  +--out_of_domain
+|  |  +--[pastas de domínios de teste]
+|  |  |  +--[arquivos do domínio].txt
++--CoreNLP.py
 
 
 
