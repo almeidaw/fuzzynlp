@@ -9,7 +9,7 @@
 ## Estrutura de diretórios
 
 O código requer que a estrutura dos diretórios seja a seguinte:
-``
+```
 clone do repositório
 ├─ paper-package
 │  ├─ dranziera
@@ -20,6 +20,7 @@ clone do repositório
 │  │  │  └─ [arquivos do domínio].txt
 └─ CoreNLP.py
 ```
+
 
 ## Etapas
 * [ ] Obter saídas do Stanford Core NLP Toolkit
