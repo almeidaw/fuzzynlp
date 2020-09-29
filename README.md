@@ -1,16 +1,16 @@
 # Implementação do método do artigo
 
-## Recursos usados:
-* Stanford Core NLP Toolkit
-* SenticNet
-* General Inquirer
-* Dranziera Protocol
+## Recursos utilizados
+* [Stanford Core NLP Toolkit](https://stanfordnlp.github.io/CoreNLP/)
+* [SenticNet](https://sentic.net/)
+* [General Inquirer](http://www.wjh.harvard.edu/~inquirer/)
+* [Dranziera Protocol](http://www.lrec-conf.org/proceedings/lrec2016/pdf/111_Paper.pdf)
 
 ## Estrutura de diretórios
 
 O código requer que a estrutura dos diretórios seja a seguinte:
-```
-repositório local
+``
+clone do repositório
 ├─ paper-package
 │  ├─ dranziera
 │  │  ├─ [pastas de domínios de treinamento]
@@ -20,8 +20,6 @@ repositório local
 │  │  │  └─ [arquivos do domínio].txt
 └─ CoreNLP.py
 ```
-
-
 
 ## Etapas
 * [ ] Obter saídas do Stanford Core NLP Toolkit
