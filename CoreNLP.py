@@ -1,6 +1,7 @@
 from pycorenlp import StanfordCoreNLP
 import os
 import pathlib
+import pandas as pd
 
 #Define local do servidor StanforCoreNLPToolkit
 nlp = StanfordCoreNLP('http://localhost:9000')
@@ -11,9 +12,6 @@ outModelDir = pathlib.Path(__file__).parent.absolute().joinpath('paper-package/o
 
 #pega o nome de cada diretório dentro do diretório Dranziera
 for dir in os.listdir(inModelDir):
-
-	#print para separar os domínios em caso de testes
-	#print("\n\n######################################## %s ########################################\n\n" % (dir))
 
 	#transforma esse nome do diretório em uma path para verificar se é um diretório mesmo 
 	#(para evitar de pegar arquivos ocultos do sistema que podem estar dentro do diretório Dranziera)
@@ -26,9 +24,6 @@ for dir in os.listdir(inModelDir):
 		#abre cara arquivo na pasta do domínio para leitura
 		for file in files:
 
-			#print para separar os arquivos em caso de testes
-			#print("\n\n######################################## %s ########################################\n\n" % (file))
-
 			with open("%s/%s" % (dirPath, file)) as dataset:
 
 				#lê primeira linha do arquivo em questão e itera por cada uma das próximas linhas (cada linha é um review)
@@ -36,9 +31,20 @@ for dir in os.listdir(inModelDir):
 				while line:
 
 					#joga linha toda no Stanford Core NLP Toolkit
-					coreoutput = nlp.annotate(line, properties={'annotators': 'sentiment', 'outputFormat': 'json', 'timeout': 100000})
+					coreoutput = nlp.annotate(line, properties={'annotators': 'lemma, pos', 'outputFormat': 'json', 'timeout': 100000})
 
-					for s in coreoutput["sentences"]:
-						print("%d: '%s': %s %s" % (s["index"], " ".join([t["word"] for t in s["tokens"]]),s["sentimentValue"], s["sentiment"]))
+					print("\rDOCUMENT: %s" % (line))
+
+					for sentence in coreoutput["sentences"]:
+						
+						print("SENTENCE: %d\n" % (sentence["index"]))
+
+						for token in sentence["tokens"]:
+
+							print("TOKEN: %d, WORD: %s, LEMMA: %s, POS: %s" % (token["index"], token["word"], token["lemma"], token["pos"]))
+						print("\r")
 
 					line = dataset.readline()
+
+
+	#dt.to_csv('CoreNLPOutput.csv’)

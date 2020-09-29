@@ -7,6 +7,13 @@
 * Dranziera Protocol
 
 ## Estrutura de diretórios
+paper-package
+|-dranziera
+  |-(domínios de treinamento separados por pastas)
+|-out_of_domain
+  |-(domínios de teste separados por pastas)
+|-CoreNLP.py
+
 
 
 
