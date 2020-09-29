@@ -8,18 +8,18 @@
 
 ## Estrutura de diretórios
 
-O código prevê que a estrutura dos diretórios seja a seguinte:
-
-.
-+--paper-package
-|  +--dranziera
-|  |  +--[pastas de domínios de treinamento]
-|  |  |  +--[arquivos do domínio].txt
-|  +--out_of_domain
-|  |  +--[pastas de domínios de teste]
-|  |  |  +--[arquivos do domínio].txt
-+--CoreNLP.py
-
+O código requer que a estrutura dos diretórios seja a seguinte:
+```
+repositório local
+├─ paper-package
+│  ├─ dranziera
+│  │  ├─ [pastas de domínios de treinamento]
+│  │  │  └─ [arquivos do domínio].txt
+│  ├─ out_of_domain
+│  │  ├─ [pastas de domínios de teste]
+│  │  │  └─ [arquivos do domínio].txt
+└─ CoreNLP.py
+```
 
 
 
