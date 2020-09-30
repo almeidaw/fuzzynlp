@@ -1,10 +1,12 @@
 from pycorenlp import StanfordCoreNLP
+from senticnet.senticnet import SenticNet
 import os
 import pathlib
 import pandas as pd
 
 #Define local do servidor StanforCoreNLPToolkit
 nlp = StanfordCoreNLP('http://localhost:9000')
+sn = SenticNet()
 
 #Define o caminho para os diretórios dos domínios de treinamento (inModel) e de teste (outModel)
 inModelDir = pathlib.Path(__file__).parent.absolute().joinpath('paper-package/dranziera')
@@ -31,7 +33,7 @@ for dir in os.listdir(inModelDir):
 				while line:
 
 					#joga linha toda no Stanford Core NLP Toolkit
-					coreoutput = nlp.annotate(line, properties={'annotators': 'lemma, pos', 'outputFormat': 'json', 'timeout': 100000})
+					coreoutput = nlp.annotate(line, properties={'annotators': 'lemma, pos, sentiment', 'outputFormat': 'json', 'timeout': 100000})
 
 					print("\rDOCUMENT: %s" % (line))
 
@@ -40,9 +42,11 @@ for dir in os.listdir(inModelDir):
 						print("SENTENCE: %d\n" % (sentence["index"]))
 
 						for token in sentence["tokens"]:
-
-							print("TOKEN: %d, WORD: %s, LEMMA: %s, POS: %s" % (token["index"], token["word"], token["lemma"], token["pos"]))
+							#senticnetoutput = sn.concept(line)
+							print("TOKEN: %d, WORD: %s, LEMMA: %s, POS: %s, SENTIMENT: %s" % (token["index"], token["word"], token["lemma"], token["pos"], sentence["sentiment"]))
+						
 						print("\r")
+
 
 					line = dataset.readline()
 
