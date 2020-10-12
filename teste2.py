@@ -70,13 +70,13 @@ for dir in os.listdir(inModelDir):
 									elif sentence["sentiment"] == "Negative":
 										polarity-=1
 								
-								elif feature == token["word"]:
-									if s != auxdoc:
-										s+=1
-									if sentence["sentiment"] == "Positive":
-										polarity+=1	
-									elif sentence["sentiment"] == "Negative":
-										polarity-=1
+							elif feature == token["word"]:
+								#if s != auxdoc:
+									#s+=1
+								if sentence["sentiment"] == "Positive":
+									polarity+=1	
+								elif sentence["sentiment"] == "Negative":
+									polarity-=1
 
 							print("TOKEN: %d, WORD: %s, LEMMA: %s, POS: %s, SENTIMENT: %s" % (token["index"], token["word"], token["lemma"], token["pos"], sentence["sentiment"]))
 						#with open(file +'.txt', 'w') as outfile:
