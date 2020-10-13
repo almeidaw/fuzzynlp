@@ -14,7 +14,7 @@ index=0
 auxindex=index
 auxdoc=0
 # Define o caminho para os diretórios dos domínios de treinamento (inModel) e de teste (outModel)
-inModelDir = pathlib.Path(__file__).parent.absolute().joinpath('paper-package/dranziera')
+inModelDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset-teste')
 # outModelDir = pathlib.Path(__file__).parent.absolute().joinpath('paper-package/out_of_domain')
 
 # pega o nome de cada diretório dentro do diretório Dranziera
