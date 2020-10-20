@@ -132,10 +132,10 @@ for domain, dataframe in domains.items():
     dataframe["DOMAIN BELONGING DEGREE (DBD)"] = DBDi
     dataframe["SENTICNET"] = pcs
 
-# Finally writes dataframe to a CSV file
-try:
-    dataframe.to_csv("outputs/%s.csv" % domain)
-except:
-    print("Unable to write CSV file")
-else:
-    print("CSV file written successfully")
+    # Finally writes dataframe to a CSV file
+    try:
+        dataframe.to_csv("outputs/%s.csv" % domain)
+    except:
+        print("Unable to write CSV file")
+    else:
+        print("CSV file written successfully")
