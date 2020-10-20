@@ -96,18 +96,24 @@ for dir in os.listdir(trainingDir):
 
                         line = dataset.readline()
 
+        # Ni is the sum of all occurrences of all features (sum of all Zs)
+        # so it's computed after we have passed for all the files in the domain
         ni = sum(zic)
 
+        # Get the index of each item in the feature column of the dataframe and compute the other values
+        # that also depends on values for all the domain as SiC ans Ni
         for feature in features:
             index = features.index(feature)
-            peic.append(kic[index] / sic[index])
-            difreq.append(zic[index]/ni)
-            ni_list.append(ni)
+            peic.insert(index, kic[index] / sic[index])
+            difreq.insert(index, zic[index]/ni)
+            ni_list.insert(index, ni)
 
+        # Writes the lists as columns of the dataframe
         domain_df = pd.DataFrame(list(zip(features, pos, kic, sic, peic, zic, ni_list, difreq)), columns=[
             "FEATURE", "POS", "SUM OF POLARITIES (K)", "# OF DOCS WITH FEATURE (S)",
             "ESTIMATED POLARITY (P=K/S)", "# TIMES OF FEAT. IN DOMAIN (Z)",
             "# TIMES OF ALL FEAT. IN DOMAIN (N)", "RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"])
+        # Saves the dataframe as an entry in a dictionary
         domains.update({dir: domain_df})
 
 for domain, dataframe in domains.items():
