@@ -144,7 +144,7 @@ for domain, dataframe in domains.items():
     # Adds the rest of the columns to dataframe
     dataframe["# TIMES OF FEAT. IN ALL DOMAINS (SUM_Z)"] = zjc
     dataframe["RELEVANCE OF FEAT. IN DOMAIN (UNIQ=Z/SUM_Z)"] = diuniq
-    dataframe["DOMAIN BELONGING DEGREE (DBD)"] = DBDi
+    #dataframe["DOMAIN BELONGING DEGREE (DBD)"] = DBDi
     dataframe["GENERAL INQUIRER"] = pcg
     dataframe["SENTICNET"] = pcs
 
