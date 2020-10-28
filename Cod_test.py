@@ -132,8 +132,10 @@ for domain, dataframe in domains.items():
         difreq = row["RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"]
         zjc.insert(index, sumZjc.get(row["FEATURE"]))
         diuniq.insert(index, zic/zjc[index])
-        pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-
+        try:
+            pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
+        except:
+            pcg.insert(index, "")
         try:
             pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
         except:
