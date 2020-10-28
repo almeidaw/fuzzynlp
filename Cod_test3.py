@@ -16,7 +16,7 @@ sumZjc = {}
 # Creates a Pandas dataframe
 domain_df = pd.DataFrame
 # Defines the training set directory
-trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset-teste')
+trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset-teste2')
 
 # Access every item inside the training set directory
 for dir in os.listdir(trainingDir):
