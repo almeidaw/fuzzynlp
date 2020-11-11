@@ -142,7 +142,7 @@ for domain, dataframe in domains.items():
             pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
         except:
             pcs.insert(index, "")
-        avgCip.insert(index, (pcg[index]+pcs[index]+peic[index])/3)
+        avgCip.insert(index, (float(pcg[index])+float(pcs[index])+float(peic[index]))/3)
 
     # Adds the rest of the columns to dataframe
     dataframe["# TIMES OF FEAT. IN ALL DOMAINS (SUM_Z)"] = zjc
