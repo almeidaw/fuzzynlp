@@ -6,6 +6,7 @@ import pandas as pd
 import os
 import pathlib
 import pysentiment2 as ps
+import statistics
 
 # Starts the SenticNet and Stanford Core NLP tools
 sn = SenticNet()
@@ -126,6 +127,8 @@ for domain, dataframe in domains.items():
     DBDi = []
     pcs = []
     pcg = []
+    avgCip= []
+    varp=[]
 
     for index, row in dataframe.iterrows():
         zic = row["# TIMES OF FEAT. IN DOMAIN (Z)"]
@@ -134,7 +137,7 @@ for domain, dataframe in domains.items():
         diuniq.insert(index, zic/zjc[index])
         DBDi.insert(index, difreq*diuniq[index])
         pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-
+        avgCip.insert(index, pcg[index]+pcs[index]+peic[])
         try:
             pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
         except:
@@ -146,7 +149,7 @@ for domain, dataframe in domains.items():
     dataframe["DOMAIN BELONGING DEGREE (DBD)"] = DBDi
     dataframe["GENERAL INQUIRER"] = pcg
     dataframe["SENTICNET"] = pcs
-
+    dataframe["AVG"] = avgCip
 
     # Finally writes dataframe to a CSV file
     try:
