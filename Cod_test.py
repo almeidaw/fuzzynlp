@@ -137,11 +137,12 @@ for domain, dataframe in domains.items():
         diuniq.insert(index, zic/zjc[index])
         DBDi.insert(index, difreq*diuniq[index])
         pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-        avgCip.insert(index, (pcg[index]+pcs[index])/3)
+        
         try:
             pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
         except:
             pcs.insert(index, "")
+        avgCip.insert(index, (pcg[index]+pcs[index]+peic[index])/3)
 
     # Adds the rest of the columns to dataframe
     dataframe["# TIMES OF FEAT. IN ALL DOMAINS (SUM_Z)"] = zjc
