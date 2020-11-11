@@ -14,6 +14,7 @@ nlp = StanfordCoreNLP('http://localhost:9000')
 #
 domains = {}
 sumZjc = {}
+peic = []
 # Creates a Pandas dataframe
 domain_df = pd.DataFrame
 # Defines the training set directory
@@ -24,7 +25,6 @@ for dir in os.listdir(trainingDir):
     # Defines lists to temporarily store the dataframe columns
     features = []
     pos = []
-    peic = []
     kic = []
     sic = []
     zic = []
@@ -137,7 +137,7 @@ for domain, dataframe in domains.items():
         diuniq.insert(index, zic/zjc[index])
         DBDi.insert(index, difreq*diuniq[index])
         pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-        avgCip.insert(index, pcg[index]+pcs[index]+peic[index])
+        avgCip.insert(index, (pcg[index]+pcs[index]+peic[index])/3)
         try:
             pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
         except:
