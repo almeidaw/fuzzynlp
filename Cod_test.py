@@ -1,12 +1,12 @@
 from pycorenlp import StanfordCoreNLP
 from senticnet.senticnet import SenticNet
 # import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 import pandas as pd
 import os
 import pathlib
 import pysentiment2 as ps
-import statistics
+import time
 
 # Starts the SenticNet and Stanford Core NLP tools
 sn = SenticNet()
@@ -14,149 +14,323 @@ nlp = StanfordCoreNLP('http://localhost:9000')
 #
 domains = {}
 sumZjc = {}
-peic = []
 # Creates a Pandas dataframe
 domain_df = pd.DataFrame
 # Defines the training set directory
-trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset-teste2')
+trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset/in_domain')
 
-# Access every item inside the training set directory
-for dir in os.listdir(trainingDir):
-    # Defines lists to temporarily store the dataframe columns
-    features = []
-    pos = []
-    kic = []
-    sic = []
-    zic = []
-    ni = 0
-    ni_list = []
-    difreq = []
-    #
-    dirPath = os.path.join(trainingDir, dir)
 
-    # Check if the accessed item is a directory and it's not hidden
-    if os.path.isdir(dirPath) and dir[0] != ".":
-        files = os.listdir(dirPath)
+def core_nlp():
+    processed_domains = []
+    # Access every item inside the training set directory
+    for dir in os.listdir(trainingDir):
 
-        # Access every not hidden file inside the domain folder
-        for file in files:
-            if file[0] != ".":
-                # Just to check which file is being read at the time
-                print(file)
+        for domain in os.listdir('outputs'):
+            if domain[0] != "." and domain not in processed_domains:
+                processed_domains.append(domain[:-4])
 
-                # Check polarity expressed in the file name (which is the same polarity as the documents it stores)
-                # If "pos" is in the name the polarity is 1, otherwise it's -1
-                if "pos" in file:
-                    polarity = 1
-                else:
-                    polarity = -1
+        if dir in processed_domains:
+            domain_df = pd.read_csv("outputs/%s.csv" % dir)
+            domains.update({dir: domain_df})
+            print("Domain", dir, "had already been processed. Loaded it to Datagram.")
+            continue
 
-                #try here
-                # Opens file and reads next line while it's not empty. Each line is a document
-                with open("%s/%s" % (dirPath, file)) as dataset:
-                    line = dataset.readline()
+        with open('outputs/'+dir+'.csv', 'w') as fp:
+            pass
+        print("Processing files for", dir)
+        start2 = time.time()
 
-                    while line:
-                        #
-                        inDocument = False
-                        # Get Stanford Core NLP lemma, pos and dependency tree outputs for that document
-                        coreOutput = nlp.annotate(line,
-                                                  properties={'annotators': 'lemma, pos, depparse',
-                                                              'outputFormat': 'json', 'timeout': 100000})
-                        # Get each token in each sentence of the document and check if
-                        # their pos is noun, adjective, verb or adverb
-                        for sentence in coreOutput["sentences"]:
-                            for token in sentence["tokens"]:
-                                if token["pos"] in ["NN", "NNS", "NNP", "NNPS", "VB", "VBD", "VBG", "VBN", "VBP",
-                                                    "VBZ", "RB", "RBR", "RBS", "JJS", "JJR", "JJ"]:
+        # Defines lists to temporarily store the dataframe columns
+        lemmas = []
+        tokens = []
+        type_feat = []
+        dependencies = []
+        pos = []
+        peic = []
+        kic = []
+        sic = []
+        zic = []
+        ni = 0
+        ni_list = []
+        difreq = []
 
-                                    # Get the lemma of the token, which is what we're going to use
-                                    lemma = token["lemma"]
+        dirPath = os.path.join(trainingDir, dir)
+        # Check if the accessed item is a directory and it's not hidden
+        if os.path.isdir(dirPath) and dir[0] != ".":
+            files = os.listdir(dirPath)
+            # Access every not hidden file inside the domain folder
+            for file in files:
+                if file[0] != ".":
+                    # Just to check which file is being read at the time
+                    start = time.time()
 
-                                    # If the lemma is not in the feature list yet we add it to the list and
-                                    # also add entries for it in the lists for polarity and occurrences counting
-                                    if not(lemma in features):
-                                        features.append(lemma)
-                                        kic.append(polarity)
-                                        sic.append(1)
-                                        zic.append(1)
-                                        pos.append(token["pos"])
-                                        inDocument = True
+                    # Check polarity expressed in the file name (which is the same polarity as the documents it stores)
+                    # If "pos" is in the name the polarity is 1, otherwise it's -1
+                    if "pos" in file:
+                        polarity = 1
+                    else:
+                        polarity = -1
 
-                                    else:
-                                        index = features.index(lemma)
-                                        zic[index] += 1
-                                        if not inDocument:
-                                            kic[index] += polarity
-                                            sic[index] += 1
-                                            inDocument = True
-
-                                    if not(lemma in sumZjc):
-                                        sumZjc.update({lemma: 1})
-                                    else:
-                                        sumZjc.update({lemma: (sumZjc.get(lemma) + 1)})
-
+                    # try here
+                    # Opens file and reads next line while it's not empty. Each line is a document
+                    with open("%s/%s" % (dirPath, file)) as dataset:
                         line = dataset.readline()
 
-        # Ni is the sum of all occurrences of all features (sum of all Zs)
-        # so it's computed after we have passed for all the files in the domain
-        ni = sum(zic)
+                        while line:
+                            #
+                            in_document = set()
+                            # Get Stanford Core NLP lemma, pos and dependency tree outputs for that document
+                            core_output = nlp.annotate(line,
+                                                      properties={'annotators': 'lemma, pos, depparse',
+                                                                  'outputFormat': 'json', 'timeout': 100000})
+                            # Get each token in each sentence of the document and check if
+                            # their pos is noun, adjective, verb or adverb
+                            for sentence in core_output["sentences"]:
+                                # Gets complex features
+                                for dependency in sentence["basicDependencies"]:
+                                    # Defines list of possible dependencies
+                                    nouns = ("NN", "NNS", "NNP", "NNPS")
+                                    adjectives = ("JJS", "JJR", "JJ")
+                                    verbs = ("VB", "VBD", "VBG", "VBN", "VBP", "VBZ")
+                                    adverbs = ("RB", "RBR", "RBS")
 
-        # Get the index of each item in the feature column of the dataframe and compute the other values
-        # that also depends on values for all the domain as SiC ans Ni
-        for feature in features:
-            index = features.index(feature)
-            peic.insert(index, kic[index] / sic[index])
-            difreq.insert(index, zic[index]/ni)
-            ni_list.insert(index, ni)
+                                    # We dont want punctuation or root dependencies
+                                    if not dependency["dep"] == "ROOT" and not dependency["dep"] == "punct":
+                                        # Checks if its a match
+                                        dependent = sentence["tokens"][dependency["dependent"]-1]
+                                        governor = sentence["tokens"][dependency["governor"]-1]
+                                        pos_dep = dependent["pos"]
+                                        pos_gov = governor["pos"]
+                                        if (pos_dep in nouns and (pos_gov in adjectives or pos_gov in verbs)) \
+                                                or (pos_dep in adjectives and (pos_gov in nouns or pos_gov in verbs or pos_gov in adverbs)) \
+                                                or (pos_dep in verbs and (pos_gov in nouns or pos_gov in adjectives)) \
+                                                or (pos_dep in adverbs and pos_gov in adjectives) \
+                                                or (pos_gov in nouns and (pos_dep in adjectives or pos_dep in verbs))\
+                                                or (pos_gov in adjectives and (pos_dep in nouns or pos_dep in verbs or pos_dep in adverbs))\
+                                                or (pos_gov in verbs and (pos_dep in nouns or pos_dep in adjectives)) \
+                                                or (pos_gov in adverbs and pos_dep in adjectives):
+                                            lemma = governor["lemma"]+"-"+dependent["lemma"]
+                                            lemma2 = dependent["lemma"]+"-"+governor["lemma"]
+                                            token = governor["word"]+"-"+dependent["word"]
 
-        # Writes the lists as columns of the dataframe
-        domain_df = pd.DataFrame(list(zip(features, pos, kic, sic, peic, zic, ni_list, difreq)), columns=[
-            "FEATURE", "POS", "SUM OF POLARITIES (K)", "# OF DOCS WITH FEATURE (S)",
-            "ESTIMATED POLARITY (P=K/S)", "# TIMES OF FEAT. IN DOMAIN (Z)",
-            "# TIMES OF ALL FEAT. IN DOMAIN (N)", "RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"])
-        # Saves the dataframe as an entry in a dictionary
-        domains.update({dir: domain_df})
+                                            if lemma not in lemmas and lemma2 not in lemmas:
+                                                lemmas.append(lemma)
+                                                tokens.append(token)
+                                                dependencies.append(dependency["dep"])
+                                                type_feat.append("complex")
+                                                kic.append(polarity)
+                                                sic.append(1)
+                                                zic.append(1)
+                                                pos.append(pos_gov+"-"+pos_dep)
+                                                in_document.add(lemma)
+                                                in_document.add(lemma2)
 
- #  dict in HIV4 is preprocessed by the default tokenizer in Library
+                                            else:
+                                                try:
+                                                    index_lemma = lemmas.index(lemma)
+                                                except:
+                                                    index_lemma = lemmas.index(lemma2)
+                                                zic[index_lemma] += 1
+                                                if lemma not in in_document:
+                                                    kic[index_lemma] += polarity
+                                                    sic[index_lemma] += 1
+                                                    in_document.add(lemma)
+                                                    in_document.add(lemma2)
+
+                                            if lemma not in sumZjc and lemma not in sumZjc:
+                                                sumZjc.update({lemma: 1})
+                                            else:
+                                                try:
+                                                    sumZjc.update({lemma: (sumZjc.get(lemma) + 1)})
+                                                except:
+                                                    sumZjc.update({lemma2: (sumZjc.get(lemma2) + 1)})
+
+                                # Gets simple features
+                                for token in sentence["tokens"]:
+                                    if token["pos"] in nouns or token["pos"] in adjectives or \
+                                            token["pos"] in verbs or token["pos"] in adverbs:
+
+                                        # Get the lemma of the token, which is what we're going to use
+                                        lemma = token["lemma"]
+
+                                        # If the lemma is not in the feature list yet we add it to the list and
+                                        # also add entries for it in the lists for polarity and occurrences counting
+                                        if not (lemma in lemmas):
+                                            lemmas.append(lemma)
+                                            tokens.append(token["word"])
+                                            dependencies.append("-")
+                                            type_feat.append("simple")
+                                            kic.append(polarity)
+                                            sic.append(1)
+                                            zic.append(1)
+                                            pos.append(token["pos"])
+                                            in_document.add(lemma)
+
+                                        else:
+                                            index_lemma = lemmas.index(lemma)
+                                            zic[index_lemma] += 1
+                                            if lemma not in in_document:
+                                                kic[index_lemma] += polarity
+                                                sic[index_lemma] += 1
+                                                in_document.add(lemma)
+
+                                        if lemma not in sumZjc:
+                                            sumZjc.update({lemma: 1})
+                                        else:
+                                            sumZjc.update({lemma: (sumZjc.get(lemma) + 1)})
+
+                            line = dataset.readline()
+
+                    end = time.time()
+                    print("Processed", file, "in", (end-start)/60)
+
+            start = time.time()
+            print("Processing additional information for each feature in domain", dir)
+            # Ni is the sum of all occurrences of all features (sum of all Zs)
+            # so it's computed after we have passed for all the files in the domain
+            ni = sum(zic)
+
+            # Get the index of each item in the feature column of the dataframe and compute the other values
+            # that also depends on values for all the domain as SiC and Ni
+            for lemma in lemmas:
+                index_lemma = lemmas.index(lemma)
+                peic.insert(index_lemma, kic[index_lemma] / sic[index_lemma])
+                difreq.insert(index_lemma, zic[index_lemma] / ni)
+                ni_list.insert(index_lemma, ni)
+
+            # Writes the lists as columns of the dataframe
+            domain_df = pd.DataFrame(list(zip(tokens, lemmas, type_feat, dependencies, pos, kic, sic, peic, zic, ni_list, difreq)), columns=[
+                "RAW FEATURE", "FEATURE", "TYPE", "DEPENDENCY", "POS", "SUM OF POLARITIES (K)", "# OF DOCS W/ FEATURE (S)",
+                "ESTIMATED POLARITY (P=K/S)", "# TIMES OF FEAT. IN DOMAIN (Z)",
+                "# TIMES OF ALL FEAT. IN DOMAIN (N)", "RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"])
+
+            end = time.time()
+            print("Processed additional information for each feature in domain", dir, "in", (end-start)/60)
+            print("Processed domain", dir, "in", (end-start2)/60)
+
+            # Finally writes dataframe to a CSV file
+            try:
+                domain_df.to_csv("outputs/%s.csv" % dir)
+            except:
+                print("Unable to write CSV file for %s" % dir)
+            else:
+                print("CSV file for %s has been successfully written" % dir)
+
+            # Saves the dataframe as an entry in a dictionary
+            domains.update({dir: domain_df})
 
 
-for domain, dataframe in domains.items():
-    zjc = []
-    diuniq = []
-    DBDi = []
-    pcs = []
-    pcg = []
-    avgCip= []
-    varp=[]
+def dbd():
+    print("\n---DBD step---\n")
+    for domain, dataframe in domains.items():
+        print("Calculating DBD for domain", domain)
+        zjc = []
+        diuniq = []
+        DBDi = []
 
-    for index, row in dataframe.iterrows():
-        zic = row["# TIMES OF FEAT. IN DOMAIN (Z)"]
-        difreq = row["RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"]
-        zjc.insert(index, sumZjc.get(row["FEATURE"]))
-        diuniq.insert(index, zic/zjc[index])
-        DBDi.insert(index, difreq*diuniq[index])
-        pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-        
+        for index, row in dataframe.iterrows():
+            zic = row["# TIMES OF FEAT. IN DOMAIN (Z)"]
+            difreq = row["RELEVANCE OF FEAT. IN DOMAIN (FREQ=Z/N)"]
+            zjc.insert(index, sumZjc.get(row["FEATURE"]))
+            diuniq.insert(index, zic/zjc[index])
+            DBDi.insert(index, difreq*diuniq[index])
+
+        # Adds the rest of the columns to dataframe
+        dataframe["# TIMES OF FEAT. IN ALL DOMAINS (SUM_Z)"] = zjc
+        dataframe["RELEVANCE OF FEAT. IN DOMAIN (UNIQ=Z/SUM_Z)"] = diuniq
+        dataframe["DOMAIN BELONGING DEGREE (DBD=FREQ*UNIQ)"] = DBDi
+
+        # Updates dataframe to a CSV file
         try:
-            pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
+            dataframe.to_csv("outputs/%s.csv" % domain)
         except:
-            pcs.insert(index, "")
-        avgCip.insert(index, (float(pcg[index])+float(pcs[index])+float(peic[index]))/3)
+            print("Unable to update CSV file for domain %s" % domain)
+        else:
+            print("CSV file for domain %s has been successfully updated" % domain)
 
-    # Adds the rest of the columns to dataframe
-    dataframe["# TIMES OF FEAT. IN ALL DOMAINS (SUM_Z)"] = zjc
-    dataframe["RELEVANCE OF FEAT. IN DOMAIN (UNIQ=Z/SUM_Z)"] = diuniq
-    dataframe["DOMAIN BELONGING DEGREE (DBD)"] = DBDi
-    dataframe["GENERAL INQUIRER"] = pcg
-    dataframe["SENTICNET"] = pcs
-    dataframe["AVG"] = avgCip
 
-    # Finally writes dataframe to a CSV file
-    try:
-        dataframe.to_csv("outputs/%s.csv" % domain)
-    except:
-        print("Unable to write CSV file")
-    else:
-        print("CSV file written successfully")
+def refinamento():
+    print("\n---Refinement step---\n")
+    for domain, dataframe in domains.items():
+        print("Refining results for domain", domain)
+        pcs = []
+        pcg = []
+        avg = []
+        var = []
+        for index, row in dataframe.iterrows():
+            if row["TYPE"] == "complex":
+                feature1, feature2 = row["FEATURE"].split("-")
+                # get PCG values
+                try:
+                    feature1_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature1)).values())[2]
+                except:
+                    feature1_pcg = ""
+                try:
+                    feature2_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature2)).values())[2]
+                except:
+                    feature2_pcg = ""
+
+                if feature1_pcg != "":
+                    if feature2_pcg != "":
+                        if row["DEPENDECY"] == "advmod":
+                            pcg.insert(index, feature1_pcg*feature2_pcg)
+                        else:
+                            pcg.insert(index, np.mean([feature1_pcg, feature1_pcg]))
+                    else:
+                        pcg.insert(index, feature1_pcg)
+                else:
+                    if feature2_pcg != "":
+                        pcg.insert(index, feature2_pcg)
+                    else:
+                        pcg.insert(index, "")
+
+                # get PCS values
+                try:
+                    feature1_pcs = sn.polarity_intense(feature1)
+                except:
+                    feature1_pcs = ""
+                try:
+                    feature2_pcs = sn.polarity_intense(feature2)
+                except:
+                    feature2_pcs = ""
+
+                if feature1_pcs != "":
+                    if feature2_pcs != "":
+                        if row["DEPENDECY"] == "advmod":
+                            pcg.insert(index, feature1_pcs*feature2_pcs)
+                        else:
+                            pcg.insert(index, np.mean([feature1_pcs, feature1_pcs]))
+                    else:
+                        pcg.insert(index, feature1_pcs)
+                else:
+                    if feature2_pcs != "":
+                        pcg.insert(index, feature2_pcs)
+                    else:
+                        pcg.insert(index, "")
+            else:
+
+                try:
+                    pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
+                except:
+                    pcg.insert(index, "")
+                try:
+                    pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
+                except:
+                    pcs.insert(index, "")
+
+        dataframe["SENTICNET"] = pcs
+        dataframe["GENERAL INQUIRER"] = pcg
+
+        # Updates dataframe to a CSV file
+        try:
+            dataframe.to_csv("outputs/%s.csv" % domain)
+        except:
+            print("Unable to update CSV file for domain %s" % domain)
+        else:
+            print("CSV file for domain %s has been successfully updated" % domain)
+
+
+if __name__ == "__main__":
+    core_nlp()
+    dbd()
 
