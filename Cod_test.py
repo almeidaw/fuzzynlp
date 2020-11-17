@@ -1,6 +1,7 @@
 from pycorenlp import StanfordCoreNLP
 from senticnet.senticnet import SenticNet
-# import matplotlib.pyplot as plt
+from statistics import variance
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
@@ -17,25 +18,24 @@ sumZjc = {}
 # Creates a Pandas dataframe
 domain_df = pd.DataFrame
 # Defines the training set directory
-trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset/in_domain')
-
+trainingDir = pathlib.Path(__file__).parent.absolute().joinpath('dataset-teste2')
 
 def core_nlp():
     processed_domains = []
     # Access every item inside the training set directory
     for dir in os.listdir(trainingDir):
 
-        for domain in os.listdir('outputs'):
+        for domain in os.listdir('outputs2'):
             if domain[0] != "." and domain not in processed_domains:
                 processed_domains.append(domain[:-4])
 
         if dir in processed_domains:
-            domain_df = pd.read_csv("outputs/%s.csv" % dir)
+            domain_df = pd.read_csv("outputs2/%s.csv" % dir)
             domains.update({dir: domain_df})
             print("Domain", dir, "had already been processed. Loaded it to Datagram.")
             continue
 
-        with open('outputs/'+dir+'.csv', 'w') as fp:
+        with open('outputs2/'+dir+'.csv', 'w') as fp:
             pass
         print("Processing files for", dir)
         start2 = time.time()
@@ -210,7 +210,7 @@ def core_nlp():
 
             # Finally writes dataframe to a CSV file
             try:
-                domain_df.to_csv("outputs/%s.csv" % dir)
+                domain_df.to_csv("outputs2/%s.csv" % dir)
             except:
                 print("Unable to write CSV file for %s" % dir)
             else:
@@ -242,95 +242,98 @@ def dbd():
 
         # Updates dataframe to a CSV file
         try:
-            dataframe.to_csv("outputs/%s.csv" % domain)
+            dataframe.to_csv("outputs2/%s.csv" % domain)
         except:
             print("Unable to update CSV file for domain %s" % domain)
         else:
             print("CSV file for domain %s has been successfully updated" % domain)
 
+def trapezoid(a,b,c,d):
+    eixoY = [0, 1, 1, 0]
+
+
+    plt.plot(a,b,c,d, eixoY , 'go')  # green bolinha
+    plt.plot(a,b,c,d, eixoY , 'k:', color='orange')  # linha pontilha orange
+
+    plt.title("Trapezoid Teste")
+
+    plt.grid(True)
+    plt.xlabel("eixo horizontal")
+    plt.ylabel("eixo y")
+    plt.show()
 
 def refinamento():
     print("\n---Refinement step---\n")
+
     for domain, dataframe in domains.items():
         print("Refining results for domain", domain)
         pcs = []
         pcg = []
         avg = []
         var = []
+        a =[]
+        b= []
+        c =[]
+        d=[]
+
         for index, row in dataframe.iterrows():
             if row["TYPE"] == "complex":
-                feature1, feature2 = row["FEATURE"].split("-")
+                try:
+                    feature1, feature2 = row["FEATURE"].split("-")
+                except:
+                   feature1 = row["FEATURE"]
+                   feature2 = row["FEATURE"]
                 # get PCG values
-                try:
-                    feature1_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature1)).values())[2]
-                except:
-                    feature1_pcg = ""
-                try:
-                    feature2_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature2)).values())[2]
-                except:
-                    feature2_pcg = ""
 
-                if feature1_pcg != "":
-                    if feature2_pcg != "":
-                        if row["DEPENDECY"] == "advmod":
-                            pcg.insert(index, feature1_pcg*feature2_pcg)
-                        else:
-                            pcg.insert(index, np.mean([feature1_pcg, feature1_pcg]))
-                    else:
-                        pcg.insert(index, feature1_pcg)
+                feature1_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature1)).values())[2]
+
+                feature2_pcg = list(ps.HIV4().get_score(ps.HIV4().tokenize(feature2)).values())[2]
+
+                if row["DEPENDENCY"] == "advmod":
+                    pcg.insert(index, float(feature1_pcg)*float(feature2_pcg))
                 else:
-                    if feature2_pcg != "":
-                        pcg.insert(index, feature2_pcg)
-                    else:
-                        pcg.insert(index, "")
-
-                # get PCS values
-                try:
-                    feature1_pcs = sn.polarity_intense(feature1)
-                except:
-                    feature1_pcs = ""
-                try:
-                    feature2_pcs = sn.polarity_intense(feature2)
-                except:
-                    feature2_pcs = ""
-
-                if feature1_pcs != "":
-                    if feature2_pcs != "":
-                        if row["DEPENDECY"] == "advmod":
-                            pcg.insert(index, feature1_pcs*feature2_pcs)
-                        else:
-                            pcg.insert(index, np.mean([feature1_pcs, feature1_pcs]))
-                    else:
-                        pcg.insert(index, feature1_pcs)
-                else:
-                    if feature2_pcs != "":
-                        pcg.insert(index, feature2_pcs)
-                    else:
-                        pcg.insert(index, "")
+                    pcg.insert(index, (float(feature1_pcg)+float(feature2_pcg))/2)
             else:
+                pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
+            try:
+                pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
+            except:
+                pcs.insert(index, 0)
+            #média e variance
+            avg.insert(index,(float(pcs[index])+float(pcg[index])+float(row["ESTIMATED POLARITY (P=K/S)"]))/3)
+            lista=[float(pcs[index]),float(pcg[index]),float(row["ESTIMATED POLARITY (P=K/S)"])]
+            var.insert(index, variance(lista))
+            # the fuzzy membership function is transformed into a trapezoid with the vertexes(a, b, c,d)
+            b.insert(index, min(float(row["ESTIMATED POLARITY (P=K/S)"]), float(avg[index])))
+            a.insert(index, max(-1, (float(b[index]) - float(var[index]))))
+            c.insert(index, max(float(row["ESTIMATED POLARITY (P=K/S)"]), float(avg[index])))
+            d.insert(index, min(1, float(c[index]) + float(var[index])))
+            trapezoid(a[index], b[index], c[index], d[index])
 
-                try:
-                    pcg.insert(index, list(ps.HIV4().get_score(ps.HIV4().tokenize(row["FEATURE"])).values())[2])
-                except:
-                    pcg.insert(index, "")
-                try:
-                    pcs.insert(index, sn.polarity_intense(row["FEATURE"]))
-                except:
-                    pcs.insert(index, "")
 
         dataframe["SENTICNET"] = pcs
         dataframe["GENERAL INQUIRER"] = pcg
+        dataframe["AVERAGE"] = avg
+        dataframe["VARIANCE"] = var
+        dataframe["A"] = a
+        dataframe["B"] = b
+        dataframe["C"] = c
+        dataframe["D"] = d
 
         # Updates dataframe to a CSV file
         try:
-            dataframe.to_csv("outputs/%s.csv" % domain)
+            dataframe.to_csv("outputs2/%s.csv" % domain)
         except:
             print("Unable to update CSV file for domain %s" % domain)
         else:
             print("CSV file for domain %s has been successfully updated" % domain)
 
 
+
+
+
 if __name__ == "__main__":
     core_nlp()
     dbd()
+    refinamento()
 
